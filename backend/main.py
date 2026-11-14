@@ -54,8 +54,9 @@ async def _run_bot():
 
 
 async def _run_api():
-    """Run uvicorn programmatically."""
-    config = uvicorn.Config(app, host="0.0.0.0", port=8080, log_level="info")
+    """Run uvicorn programmatically on dynamic PORT for cloud hostings."""
+    port = int(os.getenv("PORT", 8080))
+    config = uvicorn.Config(app, host="0.0.0.0", port=port, log_level="info")
     server = uvicorn.Server(config)
     await server.serve()
 
