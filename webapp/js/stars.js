@@ -72,15 +72,14 @@ const Stars = (() => {
   let celebrationMode = false;
 
   function maybeSpawnMeteor() {
-    const chance = celebrationMode ? 0.08 : 0.006;
-    if (Math.random() < chance && meteors.length < (celebrationMode ? 8 : 2)) {
+    if (Math.random() < 0.008 && meteors.length < 3) {
       meteors.push({
         x: Math.random() * w,
-        y: Math.random() * (h * 0.5),
-        len: 70 + Math.random() * 90,
-        speed: 14 + Math.random() * 10,
-        angle: Math.PI / 4 + (Math.random() - 0.5) * 0.25, // ~45 deg
-        opacity: 0.95,
+        y: Math.random() * (h * 0.45),
+        len: 60 + Math.random() * 80,
+        speed: 12 + Math.random() * 8,
+        angle: Math.PI / 4 + (Math.random() - 0.5) * 0.2, // ~45 deg
+        opacity: 0.9,
       });
     }
   }
@@ -92,30 +91,25 @@ const Stars = (() => {
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, w, h);
 
-    // Neon purple cosmic dust glow (pulses vibrantly during celebration)
-    const glowAlpha = celebrationMode ? 0.18 + 0.06 * Math.sin(t * 3) : 0.07;
-    const grad = ctx.createRadialGradient(w * 0.5, h * 0.35, 40, w * 0.5, h * 0.35, w * 0.85);
-    grad.addColorStop(0, `rgba(168, 85, 247, ${glowAlpha})`);
-    grad.addColorStop(0.5, `rgba(139, 92, 246, ${glowAlpha * 0.4})`);
+    // Natural cosmic dust glow behind the stars
+    const grad = ctx.createRadialGradient(w * 0.5, h * 0.3, 40, w * 0.5, h * 0.3, w * 0.85);
+    grad.addColorStop(0, 'rgba(139, 92, 246, 0.08)');
+    grad.addColorStop(0.5, 'rgba(168, 85, 247, 0.03)');
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
-    // Draw stars
-    const freqMult = celebrationMode ? 2.5 : 1;
+    // Draw normal, calm twinkling stars (identical to behind the wheel)
     for (const s of stars) {
-      let alpha = s.baseAlpha + (celebrationMode ? 0.5 : 0.35) * Math.sin(t * s.freq * freqMult + s.phase);
-      alpha = Math.max(0.12, Math.min(1, alpha));
+      let alpha = s.baseAlpha + 0.35 * Math.sin(t * s.freq + s.phase);
+      alpha = Math.max(0.1, Math.min(1, alpha));
 
       let radius = s.r;
-      let drawCross = false;
-
-      if (celebrationMode || s.sparkle) {
-        const sparklePhase = Math.sin(t * (celebrationMode ? 1.2 : 0.4) + s.sparkleTimer);
-        if (sparklePhase > 0.82) {
+      if (s.sparkle) {
+        const sparklePhase = Math.sin(t * 0.5 + s.sparkleTimer);
+        if (sparklePhase > 0.92) {
           alpha = 1;
-          radius = s.r * (celebrationMode ? 2.6 : 2.0);
-          drawCross = true;
+          radius = s.r * 1.8;
         }
       }
 
@@ -125,26 +119,11 @@ const Stars = (() => {
       ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha})`;
       ctx.fill();
 
-      // Sparkling 4-point star ray for bright twinkling stars
-      if (drawCross && alpha > 0.85) {
-        ctx.save();
-        ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha * 0.75})`;
-        ctx.lineWidth = 0.8;
-        const rayLen = radius * 4.5;
-        ctx.beginPath();
-        ctx.moveTo(s.x - rayLen, s.y);
-        ctx.lineTo(s.x + rayLen, s.y);
-        ctx.moveTo(s.x, s.y - rayLen);
-        ctx.lineTo(s.x, s.y + rayLen);
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      // Outer glow for brighter stars
+      // Soft natural glow for brighter stars
       if (radius > 1.2 && alpha > 0.5) {
         ctx.beginPath();
-        ctx.arc(s.x, s.y, radius * (celebrationMode ? 4 : 3), 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha * (celebrationMode ? 0.35 : 0.18)})`;
+        ctx.arc(s.x, s.y, radius * 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha * 0.16})`;
         ctx.fill();
       }
     }

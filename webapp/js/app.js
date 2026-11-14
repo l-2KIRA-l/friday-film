@@ -35,6 +35,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnAddMovie = document.getElementById('btn-add-movie');
   const btnMemories = document.getElementById('btn-memories');
 
+  // Movie Detail Modal
+  const modalMovieDetail = document.getElementById('modal-movie-detail');
+  const movieDetailBackdrop = modalMovieDetail?.querySelector('.movie-detail-backdrop');
+  const btnCloseMovieDetail = document.getElementById('btn-close-movie-detail');
+  const detailMoviePoster = document.getElementById('detail-movie-poster');
+  const detailMovieTitle = document.getElementById('detail-movie-title');
+  const detailProposerAvatar = document.getElementById('detail-proposer-avatar');
+  const detailProposerName = document.getElementById('detail-proposer-name');
+  const btnDetailDeleteMovie = document.getElementById('btn-detail-delete-movie');
+  let currentDetailMovie = null;
+
   // Add Modal
   const modalAdd = document.getElementById('modal-add');
   const modalBackdrop = modalAdd?.querySelector('.modal__backdrop');
@@ -233,6 +244,23 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSubmitMemory?.addEventListener('click', () => {
       submitMemory();
     });
+
+    // Movie Detail Modal Events
+    movieDetailBackdrop?.addEventListener('click', () => {
+      closeMovieDetail();
+    });
+
+    btnCloseMovieDetail?.addEventListener('click', () => {
+      closeMovieDetail();
+    });
+
+    btnDetailDeleteMovie?.addEventListener('click', () => {
+      if (currentDetailMovie) {
+        const m = currentDetailMovie;
+        closeMovieDetail();
+        askDeleteMovie(m);
+      }
+    });
   }
 
   /* ---- Expand / Collapse Wheel Sheet ---- */
@@ -304,16 +332,13 @@ document.addEventListener('DOMContentLoaded', () => {
         <button class="btn-card-delete" title="Видалити фільм" aria-label="Видалити">✕</button>
       `;
 
-      // Tap card: toggle active state showing title & delete button
+      // Tap card: opens enlarged movie view in center of screen with blurred background!
       card.addEventListener('click', (e) => {
         if (e.target.closest('.btn-card-delete')) return;
-        document.querySelectorAll('.movie-card').forEach(c => {
-          if (c !== card) c.classList.remove('show-actions');
-        });
-        card.classList.toggle('show-actions');
+        openMovieDetail(movie);
       });
 
-      // Delete button
+      // Quick delete button on card
       const btnDel = card.querySelector('.btn-card-delete');
       btnDel?.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -322,6 +347,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
       movieGrid.appendChild(card);
     });
+  }
+
+  /* ---- Movie Detail Modal (Enlarged card with blurred background) ---- */
+  function openMovieDetail(movie) {
+    currentDetailMovie = movie;
+    if (detailMoviePoster) detailMoviePoster.src = movie.poster_url || '';
+    if (detailMovieTitle) detailMovieTitle.textContent = movie.title || '';
+    if (detailProposerName) {
+      detailProposerName.textContent = `Додав(ла): ${movie.added_by?.first_name || 'Учасник'}`;
+    }
+    if (detailProposerAvatar) {
+      detailProposerAvatar.src = movie.added_by?.avatar_url || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="%23A855F7"/></svg>';
+    }
+    modalMovieDetail?.classList.remove('hidden');
+  }
+
+  function closeMovieDetail() {
+    modalMovieDetail?.classList.add('hidden');
+    currentDetailMovie = null;
   }
 
   /* ---- Delete Confirmation (Movies & Memories) ---- */

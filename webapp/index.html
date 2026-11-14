@@ -123,6 +123,23 @@
     </div>
   </div>
 
+  <!-- ===== MOVIE DETAIL OVERLAY (Click to view full screen) ===== -->
+  <div id="modal-movie-detail" class="movie-detail-overlay hidden">
+    <div class="movie-detail-backdrop"></div>
+    <div class="movie-detail-card liquid-glass-panel">
+      <button id="btn-close-movie-detail" class="btn-detail-close" aria-label="Закрити">✕</button>
+      <img id="detail-movie-poster" class="detail-movie-poster" src="" alt="Афіша фільму">
+      <h2 id="detail-movie-title" class="detail-movie-title"></h2>
+      <div id="detail-movie-proposer" class="detail-movie-proposer">
+        <img id="detail-proposer-avatar" class="detail-proposer-avatar" src="" alt="">
+        <span id="detail-proposer-name"></span>
+      </div>
+      <button id="btn-detail-delete-movie" class="btn-danger liquid-glass-btn detail-delete-btn">
+        🗑 Видалити з колеса
+      </button>
+    </div>
+  </div>
+
   <!-- ===== WINNER REVEAL OVERLAY ===== -->
   <div id="winner-overlay" class="winner-overlay hidden">
     <div class="winner-card liquid-glass-panel">
