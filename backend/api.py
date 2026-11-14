@@ -159,6 +159,23 @@ async def add_movie(
     }
 
 
+# ── DELETE /api/movies/{movie_id} ────────────────────────────────────
+
+@router.delete("/movies/{movie_id}")
+async def delete_movie(movie_id: int):
+    success = await db.delete_movie(movie_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    # Also remove local poster if exists
+    poster_path = POSTERS_DIR / f"{movie_id}.jpg"
+    if poster_path.exists():
+        try:
+            poster_path.unlink()
+        except Exception:
+            pass
+    return {"success": True, "deleted_id": movie_id}
+
+
 # ── GET /api/movies/search ───────────────────────────────────────────
 
 @router.get("/movies/search")

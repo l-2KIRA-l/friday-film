@@ -50,9 +50,9 @@
         <!-- Canvas for the fortune wheel -->
         <canvas id="wheel-canvas"></canvas>
 
-        <!-- Center Hub ("КРУТИ") -->
-        <button id="btn-wheel-center" class="wheel-center-hub liquid-glass-btn" aria-label="Крутити колесо">
-          <span class="hub-text">КРУТИ</span>
+        <!-- Center Hub: чистий сірий кружок-кнопка -->
+        <button id="btn-wheel-center" class="wheel-center-hub" aria-label="Крутити колесо">
+          <div class="hub-button-inner"></div>
         </button>
 
         <!-- Fixed bottom pointer arrow pointing UP into the bottom of the wheel -->
@@ -162,6 +162,20 @@
       </button>
     </header>
     <div id="memories-timeline" class="memories-timeline"></div>
+  </div>
+
+  <!-- ===== DELETE CONFIRMATION MODAL ===== -->
+  <div id="modal-delete" class="modal-confirm hidden">
+    <div class="modal-confirm__backdrop"></div>
+    <div class="modal-confirm__card liquid-glass-panel">
+      <div class="modal-confirm__icon">🗑</div>
+      <h3 class="modal-confirm__title">Видалити фільм?</h3>
+      <p id="modal-delete-desc" class="modal-confirm__desc">Ви точно впевнені, що хочете видалити цей фільм зі списку?</p>
+      <div class="modal-confirm__actions">
+        <button id="btn-cancel-delete" class="btn-secondary liquid-glass-btn">Скасувати</button>
+        <button id="btn-confirm-delete" class="btn-danger liquid-glass-btn">Так, видалити</button>
+      </div>
+    </div>
   </div>
 
   <!-- Scripts -->

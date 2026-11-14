@@ -1,11 +1,10 @@
 /* ============================================
    FRIDAY FILM — Master Controller
-   Sliding sheet, wheel physics, fly-in animation, TMDB
+   Sliding sheet, wheel spin & audio, card deletion,
+   in-place memory photos upload
    ============================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
-  const ADMIN_ID = 8200555770;
-
   // State
   let movies = [];
   let isWheelExpanded = false;
@@ -14,10 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentWinner = null;
   let currentHistoryId = null;
   let searchDebounceTimer = null;
+  let movieToDelete = null;
 
   // Elements
   const tg = window.Telegram?.WebApp;
   const wheelStage = document.getElementById('wheel-stage');
+  const wheelCanvas = document.getElementById('wheel-canvas');
   const btnWheelCenter = document.getElementById('btn-wheel-center');
   const btnCollapseWheel = document.getElementById('btn-collapse-wheel');
   const movieSheet = document.getElementById('movie-sheet');
@@ -27,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnAddMovie = document.getElementById('btn-add-movie');
   const btnMemories = document.getElementById('btn-memories');
 
-  // Modal
+  // Add Modal
   const modalAdd = document.getElementById('modal-add');
   const modalBackdrop = modalAdd?.querySelector('.modal__backdrop');
   const searchInput = document.getElementById('search-input');
@@ -39,6 +40,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const customUploadSection = document.getElementById('custom-upload-section');
   const customPosterInput = document.getElementById('custom-poster-input');
   const btnSubmitMovie = document.getElementById('btn-submit-movie');
+
+  // Delete Confirm Modal
+  const modalDelete = document.getElementById('modal-delete');
+  const modalDeleteDesc = document.getElementById('modal-delete-desc');
+  const btnCancelDelete = document.getElementById('btn-cancel-delete');
+  const btnConfirmDelete = document.getElementById('btn-confirm-delete');
 
   // Winner Overlay
   const winnerOverlay = document.getElementById('winner-overlay');
@@ -67,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (e) {}
     }
 
-    // Init canvas engines & sounds
+    // Init engines
     Stars.init();
     Confetti.init();
     Sounds.init();
@@ -78,9 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function bindEvents() {
-    // Center Hub click:
-    // If sheet is up (normal view) -> slide down sheet (expand wheel)
-    // If sheet is down (wheel expanded) -> SPIN THE WHEEL!
+    // 1. Center button click:
+    // If sheet is closed -> slide down sheet (expand wheel)
+    // If sheet is open -> SPIN THE WHEEL!
     btnWheelCenter?.addEventListener('click', (e) => {
       e.stopPropagation();
       if (!isWheelExpanded) {
@@ -90,14 +97,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Tapping on wheel stage when closed -> also expands wheel
+    // Tapping wheel canvas when expanded also spins!
+    wheelCanvas?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!isWheelExpanded) {
+        expandWheel();
+      } else {
+        handleSpin();
+      }
+    });
+
+    // Tapping wheel stage when closed expands wheel
     wheelStage?.addEventListener('click', () => {
       if (!isWheelExpanded) {
         expandWheel();
       }
     });
 
-    // Collapse wheel back to movies
+    // Collapse wheel back
     btnCollapseWheel?.addEventListener('click', () => {
       collapseWheel();
     });
@@ -133,6 +150,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnSubmitMovie?.addEventListener('click', () => {
       submitMovie();
+    });
+
+    // Delete Modal
+    btnCancelDelete?.addEventListener('click', () => {
+      closeDeleteModal();
+    });
+
+    modalDelete?.querySelector('.modal-confirm__backdrop')?.addEventListener('click', () => {
+      closeDeleteModal();
+    });
+
+    btnConfirmDelete?.addEventListener('click', () => {
+      confirmDeleteMovie();
     });
 
     // Winner Photos & Done
@@ -218,15 +248,63 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'movie-card';
       card.id = `movie-card-${movie.id}`;
 
-      const avatarSrc = movie.added_by?.avatar_url || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="%23A855F7"/><text x="14" y="18" fill="white" font-size="12" text-anchor="middle" font-family="sans-serif">👤</text></svg>';
+      const avatarSrc = movie.added_by?.avatar_url || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="%23A855F7"/></svg>';
 
       card.innerHTML = `
         <img class="movie-card__poster" src="${escapeHtml(movie.poster_url)}" alt="${escapeHtml(movie.title)}" loading="lazy">
         <div class="movie-card__title">${escapeHtml(movie.title)}</div>
         <img class="movie-card__avatar" src="${escapeHtml(avatarSrc)}" alt="Аватар" title="${escapeHtml(movie.added_by?.first_name || 'Учасник')}">
+        <button class="btn-card-delete" title="Видалити фільм" aria-label="Видалити">✕</button>
       `;
+
+      // Tap card: toggle active state showing title & delete button
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-card-delete')) return;
+        document.querySelectorAll('.movie-card').forEach(c => {
+          if (c !== card) c.classList.remove('show-actions');
+        });
+        card.classList.toggle('show-actions');
+      });
+
+      // Delete button
+      const btnDel = card.querySelector('.btn-card-delete');
+      btnDel?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        askDeleteMovie(movie);
+      });
+
       movieGrid.appendChild(card);
     });
+  }
+
+  /* ---- Delete Movie Confirmation ---- */
+  function askDeleteMovie(movie) {
+    movieToDelete = movie;
+    if (modalDeleteDesc) {
+      modalDeleteDesc.textContent = `Ви точно впевнені, що хочете видалити «${movie.title}» зі списку колеса?`;
+    }
+    modalDelete?.classList.remove('hidden');
+  }
+
+  function closeDeleteModal() {
+    modalDelete?.classList.add('hidden');
+    movieToDelete = null;
+  }
+
+  async function confirmDeleteMovie() {
+    if (!movieToDelete) return;
+    const movieId = movieToDelete.id;
+    btnConfirmDelete.disabled = true;
+
+    try {
+      await API.deleteMovie(movieId);
+      closeDeleteModal();
+      await loadMovies();
+    } catch (err) {
+      alert('Не вдалося видалити фільм: ' + err.message);
+    } finally {
+      btnConfirmDelete.disabled = false;
+    }
   }
 
   /* ---- Add Movie Modal & TMDB Search ---- */
@@ -239,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modalAdd?.classList.remove('active');
     if (searchInput) searchInput.value = '';
     if (searchResults) searchResults.innerHTML = '';
-    if (searchLoading) searchLoading.classList.add('hidden');
+    searchLoading?.classList.add('hidden');
     resetPosterSelection();
   }
 
@@ -362,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const posterPreviewSrc = selectedPosterImg?.src || '';
 
     try {
-      const res = await API.addMovie(formData);
+      await API.addMovie(formData);
 
       // Play wow sound (3.4s wow_2.mp3)
       Sounds.playWow();
@@ -376,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Refresh list
       await loadMovies();
 
-      // Make sure movie sheet is open so the user sees their new card
+      // Ensure movie sheet is open
       collapseWheel();
     } catch (err) {
       console.error('Failed to add movie:', err);
@@ -389,24 +467,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Smooth Card Fly-In effect: clone flies from modal button into the movie grid
   function animateCardFlyIn(imgSrc) {
     if (!imgSrc) return;
 
     const clone = document.createElement('div');
     clone.className = 'flying-card-clone';
-    clone.style.width = '120px';
-    clone.style.height = '180px';
-    clone.style.left = 'calc(50% - 60px)';
+    clone.style.width = '100px';
+    clone.style.height = '150px';
+    clone.style.left = 'calc(50% - 50px)';
     clone.style.bottom = '120px';
     clone.innerHTML = `<img src="${escapeHtml(imgSrc)}" style="width:100%;height:100%;object-fit:cover;">`;
     document.body.appendChild(clone);
 
-    // Animate to grid target
     requestAnimationFrame(() => {
-      clone.style.transform = 'translateY(-160px) scale(1.1) rotate(-6deg)';
+      clone.style.transform = 'translateY(-180px) scale(1.1) rotate(-6deg)';
       setTimeout(() => {
-        clone.style.transform = 'translateY(-240px) scale(0.8) rotate(3deg)';
+        clone.style.transform = 'translateY(-260px) scale(0.7) rotate(3deg)';
         clone.style.opacity = '0';
         setTimeout(() => clone.remove(), 600);
       }, 350);
@@ -433,7 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
         onWheelFinished(winner || currentWinner);
       });
     } catch (err) {
-      console.warn('API spin error, falling back to local pick:', err);
+      console.warn('API spin error, local pick:', err);
       const winningIndex = Math.floor(Math.random() * movies.length);
       currentWinner = movies[winningIndex];
 
@@ -446,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function onWheelFinished(winner) {
     btnWheelCenter.disabled = false;
 
-    // 1. Play celebrate sounds (fireworks + kids-happy simultaneously)
+    // 1. Play celebrate sounds (fireworks + kids-happy)
     Sounds.playFireworks();
 
     // 2. Launch confetti
@@ -489,7 +565,6 @@ document.addEventListener('DOMContentLoaded', () => {
   async function closeWinnerOverlay() {
     winnerOverlay?.classList.add('hidden');
     collapseWheel();
-    // Reload movies (winner removed from active wheel)
     await loadMovies();
   }
 
@@ -542,6 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.forEach(item => {
       const entry = document.createElement('div');
       entry.className = 'memory-entry';
+      entry.id = `memory-entry-${item.id}`;
 
       const dateStr = formatDateUk(item.watched_at);
       const user = item.proposed_by || {};
@@ -556,6 +632,10 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
       }
 
+      const hasPhotos = item.photos && item.photos.length > 0;
+      const downloadBtnText = hasPhotos ? '💾 Завантажити фото' : 'Фото ще не додано';
+      const downloadBtnDisabled = hasPhotos ? '' : 'disabled style="opacity: 0.4; cursor: default;"';
+
       entry.innerHTML = `
         <div class="memory-date">${escapeHtml(dateStr)}</div>
         <div class="memory-card liquid-glass-panel">
@@ -568,14 +648,46 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
           ${photosHtml}
-          <button class="memory-download" onclick="window.open('/api/history/${item.id}/download', '_blank')">
-            💾 Завантажити фото
-          </button>
+          <div style="display: flex; gap: 8px; align-items: center; padding: 4px 12px 10px;">
+            <label class="btn-memory-add-photo">
+              📸 Додати фото
+              <input type="file" accept="image/*" multiple hidden onchange="uploadMemoryPhotos(event, ${item.id})">
+            </label>
+            <button class="memory-download" ${downloadBtnDisabled} onclick="downloadMemory(${item.id}, ${hasPhotos ? 1 : 0})">
+              ${downloadBtnText}
+            </button>
+          </div>
         </div>
       `;
       memoriesTimeline.appendChild(entry);
     });
   }
+
+  // Handle uploading photos inside Memories screen
+  window.uploadMemoryPhotos = async function(e, historyId) {
+    const files = Array.from(e.target.files || []).slice(0, 3);
+    if (!files.length) return;
+
+    const label = e.target.parentElement;
+    const originalText = label.innerHTML;
+    label.textContent = 'Завантаження...';
+
+    try {
+      await API.uploadPhotos(historyId, files);
+      await loadMemories();
+    } catch (err) {
+      alert('Помилка завантаження фото: ' + err.message);
+      label.innerHTML = originalText;
+    }
+  };
+
+  window.downloadMemory = function(historyId, hasPhotos) {
+    if (!hasPhotos) {
+      alert('До цього перегляду ще не додано жодного фото.');
+      return;
+    }
+    window.open(`/api/history/${historyId}/download`, '_blank');
+  };
 
   function formatDateUk(dateStr) {
     if (!dateStr) return '';

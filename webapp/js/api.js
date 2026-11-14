@@ -48,6 +48,12 @@ const API = (() => {
       });
     },
 
+    async deleteMovie(movieId) {
+      return request(`/api/movies/${movieId}`, {
+        method: 'DELETE',
+      });
+    },
+
     async searchMovies(query) {
       if (!query || query.trim().length < 2) return [];
       return request(`/api/movies/search?q=${encodeURIComponent(query.trim())}`);

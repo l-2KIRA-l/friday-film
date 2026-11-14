@@ -126,6 +126,13 @@ async def get_movie_by_id(movie_id: int) -> dict | None:
     return dict(row) if row else None
 
 
+async def delete_movie(movie_id: int) -> bool:
+    db = await get_db()
+    cursor = await db.execute("DELETE FROM movies WHERE id = ?", (movie_id,))
+    await db.commit()
+    return cursor.rowcount > 0
+
+
 async def mark_watched(movie_id: int, watched_at: str) -> int:
     """Mark movie watched and create history entry. Returns history id."""
     db = await get_db()

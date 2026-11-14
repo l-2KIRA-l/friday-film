@@ -157,41 +157,37 @@ html, body {
   box-shadow: 0 0 50px rgba(139, 92, 246, 0.25), 0 0 100px rgba(168, 85, 247, 0.1);
 }
 
-/* Center Hub ("КРУТИ") */
+/* Center Hub: чистий сірий кружок-кнопка */
 .wheel-center-hub {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 78px;
-  height: 78px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  background: radial-gradient(circle at 35% 35%, #2a1548, #0e071c);
-  box-shadow: 0 0 25px var(--purple-glow), inset 0 2px 8px rgba(255, 255, 255, 0.3);
-  color: #FFFFFF;
+  border: 3px solid #27272A;
+  background: radial-gradient(circle at 35% 35%, #9CA3AF, #4B5563 70%, #374151 100%);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), inset 0 2px 3px rgba(255, 255, 255, 0.4);
   cursor: pointer;
   z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 200ms ease, box-shadow 200ms ease;
+  transition: transform 120ms ease, box-shadow 120ms ease;
 }
 
 .wheel-center-hub:active {
   transform: translate(-50%, -50%) scale(0.92);
-  box-shadow: 0 0 35px var(--violet-glow);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), inset 0 3px 6px rgba(0, 0, 0, 0.7);
 }
 
-.hub-text {
-  font-size: 14px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  background: linear-gradient(135deg, #FFFFFF, #E9D5FF);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.hub-button-inner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #E5E7EB, #6B7280 80%, #4B5563 100%);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.7), 0 2px 4px rgba(0, 0, 0, 0.35);
 }
 
 /* Fixed Bottom Pointer Arrow (Стрілка знизу) */
@@ -316,15 +312,15 @@ html, body {
   border: 1px solid rgba(139, 92, 246, 0.4);
 }
 
-/* Movie Grid */
+/* Movie Grid — 3 колонки, менші картки, постер видно повністю */
 .movie-grid {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 6px 16px 100px;
+  padding: 6px 12px 100px;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
   align-content: start;
   -webkit-overflow-scrolling: touch;
 }
@@ -336,18 +332,23 @@ html, body {
 /* Movie Card */
 .movie-card {
   position: relative;
-  border-radius: var(--card-radius);
+  border-radius: 12px;
   overflow: hidden;
   aspect-ratio: 2 / 3;
   cursor: pointer;
-  transition: transform 250ms ease, box-shadow 250ms ease;
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #0d0a14;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  background: #08060d;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
 }
 
 .movie-card:active {
-  transform: scale(0.96);
+  transform: scale(0.97);
+}
+
+.movie-card.show-actions {
+  border-color: #A855F7;
+  box-shadow: 0 0 16px var(--purple-glow);
 }
 
 .movie-card__poster {
@@ -362,27 +363,64 @@ html, body {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 24px 10px 10px;
-  font-size: 12px;
+  padding: 18px 6px 6px;
+  font-size: 10px;
   font-weight: 600;
   color: #FFFFFF;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.5) 60%, transparent 100%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.6) 70%, transparent 100%);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: center;
+  transition: opacity 200ms ease;
 }
 
 .movie-card__avatar {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
+  top: 5px;
+  left: 5px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  border: 2px solid #A855F7;
+  border: 1.5px solid #A855F7;
   object-fit: cover;
   background: #1a1628;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  z-index: 2;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* Delete Button on Movie Card */
+.btn-card-delete {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: #EF4444;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.movie-card:hover .btn-card-delete,
+.movie-card.show-actions .btn-card-delete {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.btn-card-delete:active {
+  transform: scale(0.9);
 }
 
 /* Empty State */
@@ -912,6 +950,118 @@ html, body {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Confirmation Modal */
+.modal-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 350;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-confirm.hidden {
+  display: none !important;
+}
+
+.modal-confirm__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+}
+
+.modal-confirm__card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 320px;
+  border-radius: 24px;
+  padding: 26px 20px;
+  text-align: center;
+  background: rgba(18, 14, 28, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95);
+  animation: scale-bounce 350ms cubic-bezier(0.2, 1.2, 0.4, 1);
+}
+
+.modal-confirm__icon {
+  font-size: 38px;
+  margin-bottom: 12px;
+}
+
+.modal-confirm__title {
+  font-size: 19px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: #FFFFFF;
+}
+
+.modal-confirm__desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 22px;
+  line-height: 1.45;
+}
+
+.modal-confirm__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-secondary {
+  flex: 1;
+  padding: 13px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.btn-danger {
+  flex: 1;
+  padding: 13px;
+  border-radius: 12px;
+  background: #DC2626;
+  color: #FFFFFF;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+  transition: transform 150ms ease, background 150ms ease;
+}
+
+.btn-danger:active {
+  transform: scale(0.96);
+}
+
+/* Memories Add Photo Button */
+.btn-memory-add-photo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #C084FC;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  cursor: pointer;
+  margin: 6px 12px 10px;
+  transition: background 150ms ease;
+}
+
+.btn-memory-add-photo:active {
+  background: rgba(168, 85, 247, 0.3);
 }
 
 .hidden {

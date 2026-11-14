@@ -1,6 +1,7 @@
 /* ============================================
    FRIDAY FILM — Audio Manager
    Preloads and plays sounds with mobile support
+   + Casino Wheel Peg Tick Synthesizer
    ============================================ */
 
 const Sounds = (() => {
@@ -13,6 +14,7 @@ const Sounds = (() => {
 
   const audio = {};
   let unlocked = false;
+  let audioCtx = null;
 
   function preload() {
     for (const [key, src] of Object.entries(files)) {
@@ -23,11 +25,24 @@ const Sounds = (() => {
     }
   }
 
+  function getAudioContext() {
+    if (!audioCtx) {
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtxClass) {
+        audioCtx = new AudioCtxClass();
+      }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+    return audioCtx;
+  }
+
   // Unlock audio context on first user gesture (mobile restriction)
   function unlock() {
     if (unlocked) return;
     const handler = () => {
-      // Play and immediately pause all audio to unlock
+      getAudioContext();
       for (const a of Object.values(audio)) {
         a.play().then(() => a.pause()).catch(() => {});
         a.currentTime = 0;
@@ -61,6 +76,36 @@ const Sounds = (() => {
     }
   }
 
+  // Realistic Casino Wheel Peg Click
+  function playTick() {
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      // Sharp wooden/plastic peg click sound
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1050 + Math.random() * 180, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.022);
+
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1400, ctx.currentTime);
+      filter.Q.setValueAtTime(3, ctx.currentTime);
+
+      gain.gain.setValueAtTime(0.38, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.022);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.025);
+    } catch (e) {}
+  }
+
   return {
     init() {
       preload();
@@ -72,7 +117,6 @@ const Sounds = (() => {
     },
 
     playFireworks() {
-      // Play fireworks + kids-happy simultaneously
       play('fireworks');
       play('kidsHappy');
     },
@@ -90,6 +134,7 @@ const Sounds = (() => {
       stop('happyTreeFriends');
     },
 
+    playTick,
     stopAll,
   };
 })();
