@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>Friday Film 🎬</title>
+
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/liquid-glass.css">
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+  <!-- Starry Sky Canvas (z-index: 0, fully visible behind all glass UI) -->
+  <canvas id="stars-canvas"></canvas>
+
+  <!-- Celebration Confetti Canvas (z-index: 250) -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- ===== MAIN WRAPPER ===== -->
+  <div id="app" class="app-root">
+
+    <!-- Top Navigation Bar -->
+    <header class="top-bar">
+      <button id="btn-collapse-wheel" class="top-bar__icon liquid-glass-icon hidden" aria-label="Назад до фільмів">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <div class="top-bar__title">🎬 Friday Film</div>
+      <button id="btn-memories" class="top-bar__icon liquid-glass-icon" aria-label="Спогади">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- ===== WHEEL STAGE ===== -->
+    <div id="wheel-stage" class="wheel-stage">
+      <div class="wheel-container">
+        <!-- Canvas for the fortune wheel -->
+        <canvas id="wheel-canvas"></canvas>
+
+        <!-- Center Hub ("КРУТИ") -->
+        <button id="btn-wheel-center" class="wheel-center-hub liquid-glass-btn" aria-label="Крутити колесо">
+          <span class="hub-text">КРУТИ</span>
+        </button>
+
+        <!-- Fixed bottom pointer arrow pointing UP into the bottom of the wheel -->
+        <div id="wheel-pointer-bottom" class="wheel-pointer-bottom"></div>
+      </div>
+      <div id="wheel-hint" class="wheel-hint">Натисни на середину колеса</div>
+    </div>
+
+    <!-- ===== SLIDING MOVIE SHEET ===== -->
+    <!-- This sheet overlaps the bottom of the wheel. Tapping center slides it down! -->
+    <section id="movie-sheet" class="movie-sheet liquid-glass-panel">
+      <div id="sheet-handle" class="sheet-handle-zone">
+        <div class="sheet-handle-pill"></div>
+      </div>
+
+      <div class="sheet-header">
+        <h2 class="sheet-title">Фільми на вечір</h2>
+        <span id="movies-counter" class="movies-badge">0 фільмів</span>
+      </div>
+
+      <!-- 2-column Grid of Movie Cards -->
+      <div id="movie-grid" class="movie-grid"></div>
+
+      <!-- Add Movie Button -->
+      <div class="bottom-action">
+        <button id="btn-add-movie" class="btn-primary liquid-glass-btn">
+          <span class="btn-plus">➕</span> Додати фільм
+        </button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ===== ADD MOVIE MODAL ===== -->
+  <div id="modal-add" class="modal">
+    <div class="modal__backdrop"></div>
+    <div class="modal__panel liquid-glass-panel">
+      <div class="modal__handle"></div>
+      <h2 class="modal__title">Додати фільм</h2>
+
+      <div class="search-section">
+        <input id="search-input" type="text" class="search-input liquid-glass-input" placeholder="Назва фільму (укр, eng, рус)..." autocomplete="off">
+        <div id="search-loading" class="search-loading hidden">
+          <div class="spinner"></div>
+          <span>Шукаємо постер...</span>
+        </div>
+        <div id="search-results" class="search-results"></div>
+      </div>
+
+      <div id="selected-poster-section" class="selected-poster-section hidden">
+        <div class="poster-preview-wrap">
+          <img id="selected-poster-img" class="selected-poster-img" src="" alt="Обраний постер">
+          <button id="btn-clear-poster" class="btn-clear-poster" title="Видалити">✕</button>
+        </div>
+      </div>
+
+      <div id="custom-upload-section" class="custom-upload-section hidden">
+        <p class="upload-hint">Постер не знайдено, додайте свій:</p>
+        <label class="btn-upload liquid-glass-btn">
+          📁 Завантажити з пристрою
+          <input id="custom-poster-input" type="file" accept="image/*" hidden>
+        </label>
+      </div>
+
+      <button id="btn-submit-movie" class="btn-primary liquid-glass-btn btn-submit" disabled>
+        Додати
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== WINNER REVEAL OVERLAY ===== -->
+  <div id="winner-overlay" class="winner-overlay hidden">
+    <div class="winner-card liquid-glass-panel">
+      <div class="winner-sparkles">✨ 🎉 ✨</div>
+      <h2 class="winner-label">СЬОГОДНІ ДИВИМОСЬ</h2>
+      <img id="winner-poster" class="winner-poster" src="" alt="Переможець">
+      <h1 id="winner-title" class="winner-title"></h1>
+      <p id="winner-proposer" class="winner-proposer"></p>
+
+      <div id="winner-photos-section" class="winner-photos-section">
+        <label class="btn-upload-photo liquid-glass-btn">
+          📸 Додати спільне фото
+          <input id="winner-photo-input" type="file" accept="image/*" multiple hidden>
+        </label>
+        <div id="winner-photos-preview" class="winner-photos-preview"></div>
+      </div>
+
+      <button id="btn-winner-done" class="btn-primary liquid-glass-btn">Готово</button>
+    </div>
+  </div>
+
+  <!-- ===== MEMORIES SCREEN ===== -->
+  <div id="screen-memories" class="screen-memories">
+    <header class="top-bar">
+      <button id="btn-back-memories" class="top-bar__icon liquid-glass-icon" aria-label="Назад">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <div class="top-bar__title">🕰 Спогади</div>
+      <button id="btn-download-all" class="top-bar__icon liquid-glass-icon" aria-label="Завантажити все">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </button>
+    </header>
+    <div id="memories-timeline" class="memories-timeline"></div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/stars.js"></script>
+  <script src="js/sounds.js"></script>
+  <script src="js/confetti.js"></script>
+  <script src="js/wheel.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

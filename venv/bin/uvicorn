@@ -1,0 +1,8 @@
+#!/bin/sh
+'''exec' "/Users/kirillstoanov/Documents/розробка для себе/колясо/friday-film/venv/bin/python3" "$0" "$@"
+' '''
+import sys
+from uvicorn.main import main
+if __name__ == '__main__':
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    sys.exit(main())

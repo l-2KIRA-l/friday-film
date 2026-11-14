@@ -1,0 +1,53 @@
+/* ============================================
+   FRIDAY FILM — Ultra Smooth Animations (60fps)
+   ============================================ */
+
+@keyframes scale-bounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.65) translateY(30px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.04) translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Card fly in animation when film added */
+@keyframes card-fly-in {
+  0% {
+    opacity: 0;
+    transform: translateY(120px) scale(0.4) rotate(-8deg);
+    filter: drop-shadow(0 0 30px #A855F7);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-8px) scale(1.03) rotate(1deg);
+    filter: drop-shadow(0 0 15px #8B5CF6);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+    filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.6));
+  }
+}
+
+.movie-card.fly-in {
+  animation: card-fly-in 700ms cubic-bezier(0.2, 1.2, 0.4, 1) forwards;
+}
+
+/* Flying clone element created dynamically */
+.flying-card-clone {
+  position: fixed;
+  z-index: 150;
+  pointer-events: none;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 0 35px #A855F7;
+  border: 2px solid #C084FC;
+  transition: all 650ms cubic-bezier(0.2, 1.15, 0.4, 1);
+}
