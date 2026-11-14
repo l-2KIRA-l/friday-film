@@ -251,6 +251,79 @@ async def get_history():
     return {"history": result}
 
 
+# ── POST /api/history (Create Memory manually) ───────────────────────
+
+@router.post("/history")
+async def create_memory(
+    request: Request,
+    title: str = Form(...),
+    watched_at: str = Form(...),
+    tmdb_poster_url: str | None = Form(None),
+    poster: UploadFile | None = File(None),
+    photos: list[UploadFile] | None = File(None),
+):
+    tg_user = _extract_user(request)
+    user = await db.get_or_create_user(tg_user["id"], tg_user.get("first_name", "Учасник"))
+
+    now = datetime.now(timezone.utc).isoformat()
+    movie = await db.add_movie(title, None, user["id"], now)
+    movie_id = movie["id"]
+
+    poster_path = POSTERS_DIR / f"{movie_id}.jpg"
+    if poster and poster.filename:
+        content = await poster.read()
+        poster_path.write_bytes(content)
+    elif tmdb_poster_url:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(tmdb_poster_url) as resp:
+                    if resp.status == 200:
+                        poster_path.write_bytes(await resp.read())
+        except Exception:
+            pass
+
+    # Mark watched with chosen date
+    history_id = await db.mark_watched(movie_id, watched_at)
+
+    # Save attached photos (up to 3)
+    if photos:
+        for p in photos[:3]:
+            if p and p.filename:
+                content = await p.read()
+                photo_id = await db.add_photo(history_id, "")
+                photo_path = PHOTOS_DIR / f"{photo_id}.jpg"
+                photo_path.write_bytes(content)
+                conn = await db.get_db()
+                await conn.execute(
+                    "UPDATE watch_photos SET photo_path = ? WHERE id = ?",
+                    (str(photo_path), photo_id),
+                )
+                await conn.commit()
+
+    return {"success": True, "history_id": history_id}
+
+
+# ── DELETE /api/history/{history_id} ─────────────────────────────────
+
+@router.delete("/api/history/{history_id}")
+@router.delete("/history/{history_id}")
+async def delete_memory(history_id: int):
+    # Get photos to clean up files
+    photos = await db.get_photos_for_history(history_id)
+    for p in photos:
+        p_path = PHOTOS_DIR / f"{p['id']}.jpg"
+        if p_path.exists():
+            try:
+                p_path.unlink()
+            except Exception:
+                pass
+
+    success = await db.delete_history_entry(history_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    return {"success": True, "deleted_id": history_id}
+
+
 # ── POST /api/history/{id}/photos ─────────────────────────────────────
 
 @router.post("/history/{history_id}/photos")

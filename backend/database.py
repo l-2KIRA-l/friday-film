@@ -182,6 +182,14 @@ async def get_history_entry(history_id: int) -> dict | None:
     return dict(row) if row else None
 
 
+async def delete_history_entry(history_id: int) -> bool:
+    db = await get_db()
+    await db.execute("DELETE FROM watch_photos WHERE history_id = ?", (history_id,))
+    cursor = await db.execute("DELETE FROM watch_history WHERE id = ?", (history_id,))
+    await db.commit()
+    return cursor.rowcount > 0
+
+
 async def get_photos_for_history(history_id: int) -> list[dict]:
     db = await get_db()
     cursor = await db.execute(

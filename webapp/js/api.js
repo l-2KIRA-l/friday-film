@@ -67,6 +67,19 @@ const API = (() => {
       return request('/api/history');
     },
 
+    async createMemory(formData) {
+      return request('/api/history', {
+        method: 'POST',
+        body: formData,
+      });
+    },
+
+    async deleteMemory(historyId) {
+      return request(`/api/history/${historyId}`, {
+        method: 'DELETE',
+      });
+    },
+
     async uploadPhotos(historyId, files) {
       const formData = new FormData();
       for (const file of files) {

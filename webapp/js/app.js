@@ -14,6 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentHistoryId = null;
   let searchDebounceTimer = null;
   let movieToDelete = null;
+  let memoryToDelete = null;
+
+  // Create Memory Modal State
+  let selectedMemTitle = '';
+  let selectedMemPosterUrl = '';
+  let selectedMemPhotos = [];
+  let memSearchTimer = null;
 
   // Elements
   const tg = window.Telegram?.WebApp;
@@ -61,6 +68,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnBackMemories = document.getElementById('btn-back-memories');
   const btnDownloadAll = document.getElementById('btn-download-all');
   const memoriesTimeline = document.getElementById('memories-timeline');
+  const btnCreateMemory = document.getElementById('btn-create-memory');
+
+  // Create Memory Modal
+  const modalCreateMemory = document.getElementById('modal-create-memory');
+  const modalCreateMemoryBackdrop = modalCreateMemory?.querySelector('.modal__backdrop');
+  const memDateInput = document.getElementById('mem-date-input');
+  const memSearchInput = document.getElementById('mem-search-input');
+  const memSearchLoading = document.getElementById('mem-search-loading');
+  const memSearchResults = document.getElementById('mem-search-results');
+  const memSelectedPosterSection = document.getElementById('mem-selected-poster-section');
+  const memSelectedPosterImg = document.getElementById('mem-selected-poster-img');
+  const btnMemClearPoster = document.getElementById('btn-mem-clear-poster');
+  const memPhotosInput = document.getElementById('mem-photos-input');
+  const memPhotosPreview = document.getElementById('mem-photos-preview');
+  const btnSubmitMemory = document.getElementById('btn-submit-memory');
 
   /* ---- Initialize ---- */
   function init() {
@@ -162,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnConfirmDelete?.addEventListener('click', () => {
-      confirmDeleteMovie();
+      confirmDelete();
     });
 
     // Winner Photos & Done
@@ -185,6 +207,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnDownloadAll?.addEventListener('click', () => {
       window.open('/api/history/download/all', '_blank');
+    });
+
+    // Create Memory Modal Events
+    btnCreateMemory?.addEventListener('click', () => {
+      openCreateMemoryModal();
+    });
+
+    modalCreateMemoryBackdrop?.addEventListener('click', () => {
+      closeCreateMemoryModal();
+    });
+
+    memSearchInput?.addEventListener('input', (e) => {
+      handleMemSearchInput(e.target.value);
+    });
+
+    btnMemClearPoster?.addEventListener('click', () => {
+      resetMemPoster();
+    });
+
+    memPhotosInput?.addEventListener('change', (e) => {
+      handleMemPhotosSelected(e);
+    });
+
+    btnSubmitMemory?.addEventListener('click', () => {
+      submitMemory();
     });
   }
 
@@ -252,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       card.innerHTML = `
         <img class="movie-card__poster" src="${escapeHtml(movie.poster_url)}" alt="${escapeHtml(movie.title)}" loading="lazy">
-        <div class="movie-card__title">${escapeHtml(movie.title)}</div>
+        <div class="movie-card__title">• ${escapeHtml(movie.title)}</div>
         <img class="movie-card__avatar" src="${escapeHtml(avatarSrc)}" alt="Аватар" title="${escapeHtml(movie.added_by?.first_name || 'Учасник')}">
         <button class="btn-card-delete" title="Видалити фільм" aria-label="Видалити">✕</button>
       `;
@@ -277,33 +324,58 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /* ---- Delete Movie Confirmation ---- */
+  /* ---- Delete Confirmation (Movies & Memories) ---- */
   function askDeleteMovie(movie) {
     movieToDelete = movie;
+    memoryToDelete = null;
     if (modalDeleteDesc) {
       modalDeleteDesc.textContent = `Ви точно впевнені, що хочете видалити «${movie.title}» зі списку колеса?`;
     }
     modalDelete?.classList.remove('hidden');
   }
 
+  window.askDeleteMemory = function(historyId, title) {
+    memoryToDelete = { id: historyId, title };
+    movieToDelete = null;
+    if (modalDeleteDesc) {
+      modalDeleteDesc.textContent = `Ви точно впевнені, що хочете видалити спогад про «${title}»?`;
+    }
+    modalDelete?.classList.remove('hidden');
+  };
+
   function closeDeleteModal() {
     modalDelete?.classList.add('hidden');
     movieToDelete = null;
+    memoryToDelete = null;
   }
 
-  async function confirmDeleteMovie() {
-    if (!movieToDelete) return;
-    const movieId = movieToDelete.id;
-    btnConfirmDelete.disabled = true;
+  async function confirmDelete() {
+    if (movieToDelete) {
+      const movieId = movieToDelete.id;
+      btnConfirmDelete.disabled = true;
 
-    try {
-      await API.deleteMovie(movieId);
-      closeDeleteModal();
-      await loadMovies();
-    } catch (err) {
-      alert('Не вдалося видалити фільм: ' + err.message);
-    } finally {
-      btnConfirmDelete.disabled = false;
+      try {
+        await API.deleteMovie(movieId);
+        closeDeleteModal();
+        await loadMovies();
+      } catch (err) {
+        alert('Не вдалося видалити фільм: ' + err.message);
+      } finally {
+        btnConfirmDelete.disabled = false;
+      }
+    } else if (memoryToDelete) {
+      const historyId = memoryToDelete.id;
+      btnConfirmDelete.disabled = true;
+
+      try {
+        await API.deleteMemory(historyId);
+        closeDeleteModal();
+        await loadMemories();
+      } catch (err) {
+        alert('Не вдалося видалити спогад: ' + err.message);
+      } finally {
+        btnConfirmDelete.disabled = false;
+      }
     }
   }
 
@@ -522,13 +594,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function onWheelFinished(winner) {
     btnWheelCenter.disabled = false;
 
-    // 1. Play celebrate sounds (fireworks + kids-happy)
+    // 1. Set stars into brilliant celebration mode (hyper-fast twinkling, meteors, glowing aura)
+    Stars.setCelebrationMode(true);
+
+    // 2. Play celebrate sounds (fireworks + kids-happy)
     Sounds.playFireworks();
 
-    // 2. Launch confetti
+    // 3. Launch massive cascading fireworks & confetti
     Confetti.start();
 
-    // 3. Show Winner Card
+    // 4. Show Winner Card
     if (winnerPoster) winnerPoster.src = winner.poster_url || '';
     if (winnerTitle) winnerTitle.textContent = winner.title || 'Фільм пʼятниці';
     if (winnerProposer) {
@@ -563,6 +638,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function closeWinnerOverlay() {
+    Stars.setCelebrationMode(false);
     winnerOverlay?.classList.add('hidden');
     collapseWheel();
     await loadMovies();
@@ -607,7 +683,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="empty-state">
           <div class="empty-state__icon">🕰</div>
           <div class="empty-state__text">
-            Поки немає спогадів.<br>Виберіть фільм колесом і додайте спільне фото!
+            Поки немає спогадів.<br>Створіть свій перший спогад кнопкою внизу!
           </div>
         </div>
       `;
@@ -622,6 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const dateStr = formatDateUk(item.watched_at);
       const user = item.proposed_by || {};
       const avatarSrc = user.avatar_url || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="11" fill="%23A855F7"/></svg>';
+      const movieTitle = item.movie?.title || '';
 
       let photosHtml = '';
       if (item.photos && item.photos.length > 0) {
@@ -639,9 +716,10 @@ document.addEventListener('DOMContentLoaded', () => {
       entry.innerHTML = `
         <div class="memory-date">${escapeHtml(dateStr)}</div>
         <div class="memory-card liquid-glass-panel">
-          <img class="memory-card__poster" src="${escapeHtml(item.movie?.poster_url || '')}" alt="${escapeHtml(item.movie?.title || '')}">
+          <button class="btn-memory-delete" title="Видалити спогад" aria-label="Видалити" onclick="askDeleteMemory(${item.id}, '${escapeHtml(movieTitle)}')">✕</button>
+          <img class="memory-card__poster" src="${escapeHtml(item.movie?.poster_url || '')}" alt="${escapeHtml(movieTitle)}">
           <div class="memory-card__info">
-            <div class="memory-card__title">${escapeHtml(item.movie?.title || '')}</div>
+            <div class="memory-card__title">${escapeHtml(movieTitle)}</div>
             <div class="memory-card__user">
               <img class="memory-card__user-avatar" src="${escapeHtml(avatarSrc)}" alt="">
               <span>Запропонував(ла): ${escapeHtml(user.first_name || 'Учасник')}</span>
@@ -680,6 +758,151 @@ document.addEventListener('DOMContentLoaded', () => {
       label.innerHTML = originalText;
     }
   };
+
+  /* ---- Create Memory Modal Logic ---- */
+  function openCreateMemoryModal() {
+    modalCreateMemory?.classList.add('active');
+    if (memDateInput) {
+      memDateInput.value = new Date().toISOString().split('T')[0];
+    }
+    if (memSearchInput) memSearchInput.value = '';
+    if (memSearchResults) memSearchResults.innerHTML = '';
+    resetMemPoster();
+    selectedMemPhotos = [];
+    if (memPhotosPreview) memPhotosPreview.innerHTML = '';
+    if (memPhotosInput) memPhotosInput.value = '';
+    updateSubmitMemoryBtn();
+    setTimeout(() => memSearchInput?.focus(), 150);
+  }
+
+  function closeCreateMemoryModal() {
+    modalCreateMemory?.classList.remove('active');
+    resetMemPoster();
+    selectedMemPhotos = [];
+  }
+
+  function resetMemPoster() {
+    selectedMemTitle = '';
+    selectedMemPosterUrl = '';
+    memSelectedPosterSection?.classList.add('hidden');
+    if (memSelectedPosterImg) memSelectedPosterImg.src = '';
+    updateSubmitMemoryBtn();
+  }
+
+  function updateSubmitMemoryBtn() {
+    if (!btnSubmitMemory) return;
+    const hasTitle = (selectedMemTitle && selectedMemTitle.trim().length > 0) || (memSearchInput && memSearchInput.value.trim().length > 0);
+    btnSubmitMemory.disabled = !hasTitle;
+  }
+
+  function handleMemSearchInput(query) {
+    clearTimeout(memSearchTimer);
+    const q = query?.trim() || '';
+    updateSubmitMemoryBtn();
+
+    if (q.length < 2) {
+      if (memSearchResults) memSearchResults.innerHTML = '';
+      memSearchLoading?.classList.add('hidden');
+      return;
+    }
+
+    memSearchLoading?.classList.remove('hidden');
+
+    memSearchTimer = setTimeout(async () => {
+      try {
+        const data = await API.searchMovies(q);
+        renderMemSearchResults(data.results || []);
+      } catch (err) {
+        renderMemSearchResults([]);
+      } finally {
+        memSearchLoading?.classList.add('hidden');
+      }
+    }, 350);
+  }
+
+  function renderMemSearchResults(results) {
+    if (!memSearchResults) return;
+    memSearchResults.innerHTML = '';
+
+    if (!results.length) {
+      memSearchResults.innerHTML = '<span style="font-size:12px;color:var(--text-muted);padding:8px;">Фільмів не знайдено, назву можна ввести вручну</span>';
+      return;
+    }
+
+    results.forEach(movie => {
+      const item = document.createElement('div');
+      item.className = 'search-result-item';
+      item.innerHTML = `
+        <img src="${escapeHtml(movie.poster_url)}" alt="${escapeHtml(movie.title)}" loading="lazy">
+        <div class="result-title">${escapeHtml(movie.title)}</div>
+      `;
+      item.addEventListener('click', () => {
+        selectMemMovie(movie);
+      });
+      memSearchResults.appendChild(item);
+    });
+  }
+
+  function selectMemMovie(movie) {
+    selectedMemTitle = movie.title;
+    selectedMemPosterUrl = movie.poster_url;
+    if (memSearchInput) memSearchInput.value = movie.title;
+    if (memSelectedPosterImg) memSelectedPosterImg.src = movie.poster_url;
+    memSelectedPosterSection?.classList.remove('hidden');
+    if (memSearchResults) memSearchResults.innerHTML = '';
+    updateSubmitMemoryBtn();
+  }
+
+  function handleMemPhotosSelected(e) {
+    const files = Array.from(e.target.files || []).slice(0, 3);
+    selectedMemPhotos = files;
+    if (!memPhotosPreview) return;
+    memPhotosPreview.innerHTML = '';
+
+    files.forEach(f => {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(f);
+      img.style.cssText = 'width:64px;height:64px;border-radius:10px;object-fit:cover;border:1px solid #A855F7;';
+      memPhotosPreview.appendChild(img);
+    });
+  }
+
+  async function submitMemory() {
+    const title = selectedMemTitle.trim() || (memSearchInput ? memSearchInput.value.trim() : '');
+    const dateVal = memDateInput?.value || new Date().toISOString().split('T')[0];
+
+    if (!title) {
+      alert('Будь ласка, оберіть або введіть назву фільму');
+      return;
+    }
+
+    btnSubmitMemory.disabled = true;
+    btnSubmitMemory.textContent = 'Збереження...';
+
+    try {
+      const fd = new FormData();
+      fd.append('title', title);
+      fd.append('watched_at', dateVal);
+      if (selectedMemPosterUrl) {
+        fd.append('tmdb_poster_url', selectedMemPosterUrl);
+      }
+      for (const p of selectedMemPhotos) {
+        fd.append('photos', p);
+      }
+
+      await API.createMemory(fd);
+      Sounds.playWow();
+      closeCreateMemoryModal();
+      await loadMemories();
+    } catch (err) {
+      alert('Помилка при збереженні спогаду: ' + err.message);
+    } finally {
+      if (btnSubmitMemory) {
+        btnSubmitMemory.disabled = false;
+        btnSubmitMemory.textContent = 'Зберегти спогад';
+      }
+    }
+  }
 
   window.downloadMemory = function(historyId, hasPhotos) {
     if (!hasPhotos) {

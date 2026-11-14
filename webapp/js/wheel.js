@@ -85,10 +85,11 @@ const Wheel = (() => {
 
       ctx.save();
 
-      // 1. Clip exact sector wedge
+      // 1. Clip sector wedge with clean angular margin so slices NEVER touch or overlap
+      const margin = n > 1 ? 0.018 : 0; // In radians
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.arc(0, 0, radius, start, end);
+      ctx.arc(0, 0, radius - 2, start + margin, end - margin);
       ctx.closePath();
       ctx.clip();
 
@@ -97,24 +98,20 @@ const Wheel = (() => {
       ctx.fillStyle = `hsl(${hue}, 60%, 12%)`;
       ctx.fill();
 
-      // 3. Draw Movie Poster: EXPANDED to fill the whole wedge!
-      // Bottom of poster faces center, top faces outer rim
+      // 3. Draw Movie Poster: EXPANDED to fill the wedge without bleeding
       const img = imageCache.get(movie.poster_url);
       if (img && img.complete && img.naturalWidth > 0) {
         ctx.save();
         ctx.rotate(mid);
 
-        const rMin = hubRadius + 2;
-        const rMax = radius;
+        const rMin = hubRadius + 4;
+        const rMax = radius - 4;
         const wedgeHeight = rMax - rMin;
         const rCenter = (rMin + rMax) / 2;
 
-        // Sector width across at outer rim
-        const wedgeWidth = 2 * rMax * Math.sin(arc / 2);
-
-        // Scale to expand and fill the entire space of the triangle
-        const posterH = wedgeHeight * 1.05;
-        const posterW = Math.max(wedgeWidth * 1.15, posterH * (2 / 3));
+        const wedgeWidth = 2 * rMax * Math.sin((arc - margin * 2) / 2);
+        const posterH = wedgeHeight * 1.02;
+        const posterW = Math.max(wedgeWidth * 1.08, posterH * (2 / 3));
 
         ctx.translate(rCenter, 0);
         ctx.rotate(Math.PI / 2); // bottom faces center, top faces rim
@@ -132,15 +129,30 @@ const Wheel = (() => {
         ctx.restore();
       }
 
-      // 4. Glowing sector divider lines
+      ctx.restore(); // restore slice clip
+    }
+
+    // 4. Prominent, clean dividers between all slices (drawn unclipped so they never get cut off)
+    for (let i = 0; i < n; i++) {
+      const angle = i * arc;
+
+      // Dark solid base line
       ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(radius * Math.cos(start), radius * Math.sin(start));
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-      ctx.lineWidth = 2;
+      ctx.moveTo(hubRadius * Math.cos(angle), hubRadius * Math.sin(angle));
+      ctx.lineTo(radius * Math.cos(angle), radius * Math.sin(angle));
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 6;
       ctx.stroke();
 
-      ctx.restore();
+      // Glowing violet accent line
+      ctx.beginPath();
+      ctx.moveTo(hubRadius * Math.cos(angle), hubRadius * Math.sin(angle));
+      ctx.lineTo(radius * Math.cos(angle), radius * Math.sin(angle));
+      ctx.strokeStyle = '#C084FC';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = NEON_GLOW;
+      ctx.shadowBlur = 8;
+      ctx.stroke();
     }
 
     // Outer rim ring

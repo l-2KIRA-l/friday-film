@@ -162,6 +162,59 @@
       </button>
     </header>
     <div id="memories-timeline" class="memories-timeline"></div>
+    <div class="memories-bottom-action">
+      <button id="btn-create-memory" class="btn-primary liquid-glass-btn">
+        <span>➕</span> Створити спогад
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== CREATE MEMORY MODAL ===== -->
+  <div id="modal-create-memory" class="modal">
+    <div class="modal__backdrop"></div>
+    <div class="modal__panel liquid-glass-panel">
+      <div class="modal__handle"></div>
+      <h2 class="modal__title">Створити спогад</h2>
+
+      <!-- 1. Date selection -->
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label class="form-label" style="display:block; font-size:13px; font-weight:600; color:#C4B5FD; margin-bottom:6px;">📅 Дата перегляду</label>
+        <input id="mem-date-input" type="date" class="search-input liquid-glass-input">
+      </div>
+
+      <!-- 2. Movie search -->
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label class="form-label" style="display:block; font-size:13px; font-weight:600; color:#C4B5FD; margin-bottom:6px;">🎬 Фільм, який дивились</label>
+        <input id="mem-search-input" type="text" class="search-input liquid-glass-input" placeholder="Пошук назви фільму..." autocomplete="off">
+        <div id="mem-search-loading" class="search-loading hidden">
+          <div class="spinner"></div>
+          <span>Шукаємо фільм...</span>
+        </div>
+        <div id="mem-search-results" class="search-results"></div>
+      </div>
+
+      <!-- Selected movie poster preview -->
+      <div id="mem-selected-poster-section" class="selected-poster-section hidden">
+        <div class="poster-preview-wrap">
+          <img id="mem-selected-poster-img" class="selected-poster-img" src="" alt="Постер">
+          <button id="btn-mem-clear-poster" class="btn-clear-poster" title="Видалити">✕</button>
+        </div>
+      </div>
+
+      <!-- 3. Photos upload (up to 3) -->
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label class="form-label" style="display:block; font-size:13px; font-weight:600; color:#C4B5FD; margin-bottom:6px;">📸 Спільні фото перегляду (до 3 шт.)</label>
+        <label class="btn-upload liquid-glass-btn" style="width: 100%; justify-content: center;">
+          📁 Обрати фото
+          <input id="mem-photos-input" type="file" accept="image/*" multiple hidden>
+        </label>
+        <div id="mem-photos-preview" class="winner-photos-preview" style="margin-top: 10px;"></div>
+      </div>
+
+      <button id="btn-submit-memory" class="btn-primary liquid-glass-btn btn-submit" disabled>
+        Зберегти спогад
+      </button>
+    </div>
   </div>
 
   <!-- ===== DELETE CONFIRMATION MODAL ===== -->

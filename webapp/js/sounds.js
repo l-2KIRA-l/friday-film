@@ -76,33 +76,53 @@ const Sounds = (() => {
     }
   }
 
-  // Realistic Casino Wheel Peg Click
+  // Realistic Casino Wheel Peg Click (Гучний, чіткий та соковитий)
   function playTick() {
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const filter = ctx.createBiquadFilter();
 
-      // Sharp wooden/plastic peg click sound
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(1050 + Math.random() * 180, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.022);
+      const t = ctx.currentTime;
 
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(1400, ctx.currentTime);
-      filter.Q.setValueAtTime(3, ctx.currentTime);
+      // 1. Woody/plastic peg impact punch
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      const filter1 = ctx.createBiquadFilter();
 
-      gain.gain.setValueAtTime(0.38, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.022);
+      osc1.type = 'triangle';
+      osc1.frequency.setValueAtTime(1400 + Math.random() * 250, t);
+      osc1.frequency.exponentialRampToValueAtTime(140, t + 0.04);
 
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
+      filter1.type = 'bandpass';
+      filter1.frequency.setValueAtTime(1500, t);
+      filter1.Q.setValueAtTime(2.0, t);
 
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.025);
+      gain1.gain.setValueAtTime(1.3, t);
+      gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+
+      osc1.connect(filter1);
+      filter1.connect(gain1);
+      gain1.connect(ctx.destination);
+
+      osc1.start(t);
+      osc1.stop(t + 0.042);
+
+      // 2. High snap click transient (sharp edge of the casino flapper)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+
+      osc2.type = 'sawtooth';
+      osc2.frequency.setValueAtTime(3200 + Math.random() * 400, t);
+      osc2.frequency.exponentialRampToValueAtTime(400, t + 0.02);
+
+      gain2.gain.setValueAtTime(0.7, t);
+      gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
+
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+
+      osc2.start(t);
+      osc2.stop(t + 0.022);
     } catch (e) {}
   }
 
