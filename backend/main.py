@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import ensure_dirs, WEBAPP_DIR, SOUNDS_DIR
 from api import router as api_router
-from bot import bot, get_dispatcher
+from bot import bot, get_dispatcher, setup_bot_menu
 from database import close_db
 
 app = FastAPI(title="Friday Film")
@@ -47,6 +47,7 @@ async def _run_bot():
     """Run aiogram polling with resilient auto-reconnect."""
     while True:
         try:
+            await setup_bot_menu()
             dp = get_dispatcher()
             await dp.start_polling(bot, skip_updates=True)
         except Exception as e:

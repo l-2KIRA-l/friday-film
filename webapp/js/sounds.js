@@ -38,21 +38,20 @@ const Sounds = (() => {
     return audioCtx;
   }
 
-  // Unlock audio context on first user gesture (mobile restriction)
+  // Unlock Web Audio context cleanly on first user gesture without playing any sounds
   function unlock() {
     if (unlocked) return;
     const handler = () => {
-      getAudioContext();
-      for (const a of Object.values(audio)) {
-        a.play().then(() => a.pause()).catch(() => {});
-        a.currentTime = 0;
+      const ctx = getAudioContext();
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
       }
       unlocked = true;
       document.removeEventListener('touchstart', handler, true);
       document.removeEventListener('click', handler, true);
     };
-    document.addEventListener('touchstart', handler, true);
-    document.addEventListener('click', handler, true);
+    document.addEventListener('touchstart', handler, { capture: true, once: true });
+    document.addEventListener('click', handler, { capture: true, once: true });
   }
 
   function play(key) {

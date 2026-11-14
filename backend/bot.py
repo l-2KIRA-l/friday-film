@@ -14,9 +14,15 @@ except RuntimeError:
 
 from aiogram import Bot, Dispatcher, Router, types
 from aiogram.filters import CommandStart
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from aiogram.types import (
+    FSInputFile,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    MenuButtonWebApp,
+    WebAppInfo,
+)
 
-from config import BOT_TOKEN, WEBAPP_URL, CHATS_JSON
+from config import BOT_TOKEN, WEBAPP_URL, CHATS_JSON, WELCOME_ANIMATION
 
 bot = Bot(token=BOT_TOKEN)
 router = Router()
@@ -51,6 +57,22 @@ def _add_chat(chat_id: int) -> None:
         _save_chats(chats)
 
 
+# ── Bot Menu Setup ───────────────────────────────────────────────────
+
+async def setup_bot_menu() -> None:
+    """Automatically configure persistent Menu Button in Telegram."""
+    webapp_url = WEBAPP_URL or "https://friday-film.onrender.com"
+    try:
+        await bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(
+                text="🎬 Friday Film",
+                web_app=WebAppInfo(url=webapp_url),
+            )
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to set chat menu button: {e}")
+
+
 # ── /start command ───────────────────────────────────────────────────
 
 @router.message(CommandStart())
@@ -59,16 +81,36 @@ async def cmd_start(message: types.Message):
     if message.chat.type in ("group", "supergroup"):
         _add_chat(message.chat.id)
 
-    webapp_url = WEBAPP_URL or "https://localhost:8080"
+    webapp_url = WEBAPP_URL or "https://friday-film.onrender.com"
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
             text="🎬 Відкрити Friday Film",
             web_app=WebAppInfo(url=webapp_url),
         )]
     ])
+
+    caption = (
+        "🎬 *Friday Film* — наш затишний п'ятничний кіновечір!\n\n"
+        "✨ Крутіть космічне колесо фортуни\n"
+        "🍿 Пропонуйте улюблені фільми на вечір\n"
+        "📸 Зберігайте спільні фото та спогади\n\n"
+        "Натисніть кнопку нижче, щоб відкрити додаток:"
+    )
+
+    if WELCOME_ANIMATION.exists():
+        try:
+            await message.answer_animation(
+                animation=FSInputFile(str(WELCOME_ANIMATION)),
+                caption=caption,
+                reply_markup=keyboard,
+                parse_mode="Markdown",
+            )
+            return
+        except Exception as e:
+            print(f"⚠️ Failed to send welcome animation: {e}")
+
     await message.answer(
-        "🎬 *Friday Film* — ваш п'ятничний кіновечір!\n\n"
-        "Натисніть кнопку нижче, щоб відкрити додаток:",
+        caption,
         reply_markup=keyboard,
         parse_mode="Markdown",
     )

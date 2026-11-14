@@ -12,7 +12,7 @@ load_dotenv(PROJECT_ROOT / ".env")
 BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
 ADMIN_TELEGRAM_ID: int = int(os.getenv("ADMIN_TELEGRAM_ID", "8200555770"))
 TMDB_API_KEY: str = os.getenv("TMDB_API_KEY", "")
-WEBAPP_URL: str = os.getenv("WEBAPP_URL", "")
+WEBAPP_URL: str = os.getenv("WEBAPP_URL", "https://friday-film.onrender.com")
 
 # Data directories (relative to project root)
 DATA_DIR = PROJECT_ROOT / "data"
@@ -22,7 +22,9 @@ AVATARS_DIR = DATA_DIR / "avatars"
 DB_PATH = DATA_DIR / "friday_film.db"
 CHATS_JSON = DATA_DIR / "chats.json"
 
-# Webapp directory (sibling of backend)
+# Assets and webapp directory
+ASSETS_DIR = PROJECT_ROOT / "backend" / "assets"
+WELCOME_ANIMATION = ASSETS_DIR / "welcome.mp4"
 WEBAPP_DIR = PROJECT_ROOT / "webapp"
 SOUNDS_DIR = WEBAPP_DIR / "sounds"
 
