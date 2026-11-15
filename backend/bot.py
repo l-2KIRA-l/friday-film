@@ -108,6 +108,16 @@ async def cmd_start(message: types.Message):
             return
         except Exception as e:
             print(f"⚠️ Failed to send welcome animation: {e}")
+            try:
+                await message.answer_video(
+                    video=FSInputFile(str(WELCOME_ANIMATION)),
+                    caption=caption,
+                    reply_markup=keyboard,
+                    parse_mode="Markdown",
+                )
+                return
+            except Exception as e2:
+                print(f"⚠️ Failed to send welcome video: {e2}")
 
     await message.answer(
         caption,
