@@ -77,6 +77,7 @@ async def setup_bot_menu() -> None:
 
 @router.message(CommandStart())
 async def cmd_start(message: types.Message):
+    print(f"📥 Received /start from chat {message.chat.id} ({message.chat.type})")
     # Track group chats
     if message.chat.type in ("group", "supergroup"):
         _add_chat(message.chat.id)
@@ -99,6 +100,7 @@ async def cmd_start(message: types.Message):
 
     if WELCOME_ANIMATION.exists():
         try:
+            print(f"🎬 Sending welcome animation from {WELCOME_ANIMATION} to {message.chat.id}")
             await message.answer_animation(
                 animation=FSInputFile(str(WELCOME_ANIMATION)),
                 caption=caption,
@@ -109,6 +111,7 @@ async def cmd_start(message: types.Message):
         except Exception as e:
             print(f"⚠️ Failed to send welcome animation: {e}")
             try:
+                print(f"🎬 Sending welcome video from {WELCOME_ANIMATION} to {message.chat.id}")
                 await message.answer_video(
                     video=FSInputFile(str(WELCOME_ANIMATION)),
                     caption=caption,
@@ -119,6 +122,7 @@ async def cmd_start(message: types.Message):
             except Exception as e2:
                 print(f"⚠️ Failed to send welcome video: {e2}")
 
+    print(f"🎬 Sending welcome text to {message.chat.id}")
     await message.answer(
         caption,
         reply_markup=keyboard,

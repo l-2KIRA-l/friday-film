@@ -2,6 +2,7 @@
    FRIDAY FILM — Audio Manager
    Preloads and plays sounds with mobile support
    + Casino Wheel Peg Tick Synthesizer
+   + Button Click sound
    ============================================ */
 
 const Sounds = (() => {
@@ -10,19 +11,20 @@ const Sounds = (() => {
     fireworks: 'sounds/fireworks.mp3',
     kidsHappy: 'sounds/kids-happy.mp3',
     happyTreeFriends: 'sounds/happy-tree-friends.mp3',
+    click: 'sounds/button-click.mp3',
   };
 
   const audio = {};
-  let unlocked = false;
   let audioCtx = null;
 
-  function preload() {
-    for (const [key, src] of Object.entries(files)) {
+  function getAudio(key) {
+    if (!audio[key] && files[key]) {
       const a = new Audio();
       a.preload = 'auto';
-      a.src = src;
+      a.src = files[key];
       audio[key] = a;
     }
+    return audio[key];
   }
 
   function getAudioContext() {
@@ -38,40 +40,42 @@ const Sounds = (() => {
     return audioCtx;
   }
 
-  // Unlock Web Audio context cleanly on first user gesture without playing any sounds
+  // Safely resume Web Audio context on user gesture WITHOUT playing any audio elements
   function unlock() {
-    if (unlocked) return;
     const handler = () => {
       const ctx = getAudioContext();
       if (ctx && ctx.state === 'suspended') {
         ctx.resume().catch(() => {});
       }
-      unlocked = true;
-      document.removeEventListener('touchstart', handler, true);
-      document.removeEventListener('click', handler, true);
     };
     document.addEventListener('touchstart', handler, { capture: true, once: true });
     document.addEventListener('click', handler, { capture: true, once: true });
   }
 
   function play(key) {
-    const a = audio[key];
+    const a = getAudio(key);
     if (!a) return;
-    a.currentTime = 0;
-    a.play().catch(() => {});
+    try {
+      a.currentTime = 0;
+      a.play().catch(() => {});
+    } catch (e) {}
   }
 
   function stop(key) {
     const a = audio[key];
     if (!a) return;
-    a.pause();
-    a.currentTime = 0;
+    try {
+      a.pause();
+      a.currentTime = 0;
+    } catch (e) {}
   }
 
   function stopAll() {
     for (const a of Object.values(audio)) {
-      a.pause();
-      a.currentTime = 0;
+      try {
+        a.pause();
+        a.currentTime = 0;
+      } catch (e) {}
     }
   }
 
@@ -127,8 +131,15 @@ const Sounds = (() => {
 
   return {
     init() {
-      preload();
+      // Pre-instantiate objects without playing them
+      for (const key of Object.keys(files)) {
+        getAudio(key);
+      }
       unlock();
+    },
+
+    playClick() {
+      play('click');
     },
 
     playWow() {
@@ -142,7 +153,7 @@ const Sounds = (() => {
 
     playMemories() {
       stopAll();
-      const a = audio.happyTreeFriends;
+      const a = getAudio('happyTreeFriends');
       if (a) {
         a.currentTime = 0;
         a.play().catch(() => {});

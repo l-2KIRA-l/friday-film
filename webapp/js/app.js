@@ -118,6 +118,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function bindEvents() {
+    // Global button click sound for all interactive buttons and controls
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('button, .btn-primary, .btn-secondary, .btn-danger, .top-bar__icon, .btn-upload, .btn-upload-photo, .btn-memory-add-photo, .btn-detail-close, .btn-card-delete, .sheet-handle-zone, .movie-card, .search-item');
+      if (btn) {
+        Sounds.playClick();
+      }
+    }, true);
+
     // 1. Center button click:
     // If sheet is closed -> slide down sheet (expand wheel)
     // If sheet is open -> SPIN THE WHEEL!
