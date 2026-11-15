@@ -12,7 +12,7 @@ load_dotenv(PROJECT_ROOT / ".env")
 BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
 ADMIN_TELEGRAM_ID: int = int(os.getenv("ADMIN_TELEGRAM_ID", "8200555770"))
 TMDB_API_KEY: str = os.getenv("TMDB_API_KEY", "")
-WEBAPP_URL: str = os.getenv("WEBAPP_URL", "https://friday-film.onrender.com")
+WEBAPP_URL: str = (os.getenv("WEBAPP_URL") or "").strip() or "https://friday-film.onrender.com"
 
 # Data directories (relative to project root)
 DATA_DIR = PROJECT_ROOT / "data"
